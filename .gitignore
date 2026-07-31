@@ -1,0 +1,6 @@
+/target/
+/.kaptaind/
+*.db
+*.db-shm
+*.db-wal
+.env

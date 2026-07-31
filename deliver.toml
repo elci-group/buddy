@@ -1,0 +1,44 @@
+[[file]]
+path = "Cargo.toml"
+required = true
+forbid_regex = ["TODO", "FIXME"]
+
+[[file]]
+path = "src/main.rs"
+required = true
+min_size_bytes = 1000
+forbid_regex = ["TODO", "FIXME", "unimplemented!"]
+
+[[file]]
+path = "README.md"
+required = true
+require_regex = ["cargo install", "GROQ_API_KEY", "buddy scan", "buddy ask", "buddy update"]
+
+[[command]]
+name = "format check"
+cmd = ["cargo", "fmt", "--check"]
+expect_exit = 0
+timeout_secs = 60
+
+[[command]]
+name = "clippy"
+cmd = ["cargo", "clippy", "--all-targets", "--", "-D", "warnings"]
+expect_exit = 0
+timeout_secs = 300
+
+[[command]]
+name = "tests"
+cmd = ["cargo", "test"]
+expect_exit = 0
+timeout_secs = 300
+stdout_contains = ["test result: ok"]
+
+[[command]]
+name = "release build"
+cmd = ["cargo", "build", "--release"]
+expect_exit = 0
+timeout_secs = 300
+
+[git]
+no_uncommitted_changes = false
+no_untracked_files = false
