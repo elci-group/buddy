@@ -24,6 +24,11 @@ patch = 0.1    # score at or above this bumps Patch; below it, no commit
 enabled = true
 branch = "main"
 
+[push.safety]
+allow_force = false
+require_upstream_exist = false
+protect_branches = []
+
 [ratelimit]
 min_commit_interval = 10
 
