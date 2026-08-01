@@ -10,9 +10,36 @@ min_size_bytes = 1000
 forbid_regex = ["TODO", "FIXME", "unimplemented!"]
 
 [[file]]
+path = "src/obs.rs"
+required = true
+min_size_bytes = 1000
+forbid_regex = ["TODO", "FIXME", "unimplemented!"]
+
+[[file]]
+path = "src/skillastic.rs"
+required = true
+forbid_regex = ["TODO", "FIXME", "unimplemented!"]
+
+[[file]]
+path = "examples/obs-scene.json"
+required = true
+
+[[file]]
+path = ".skillastic/config.json"
+required = true
+
+[[file]]
+path = ".skillastic/skills/obs-scene-management.json"
+required = true
+
+[[file]]
+path = ".skillastic/skills/obs-scene-management.md"
+required = true
+
+[[file]]
 path = "README.md"
 required = true
-require_regex = ["cargo install", "GROQ_API_KEY", "buddy scan", "buddy ask", "buddy update", "buddy ask --screen", "buddy avatar"]
+require_regex = ["cargo install", "GROQ_API_KEY", "buddy scan", "buddy ask", "buddy update", "buddy ask --screen", "buddy avatar", "buddy skillastic", "buddy obs compose"]
 
 [[command]]
 name = "format check"

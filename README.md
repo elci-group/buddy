@@ -52,6 +52,17 @@ buddy status
 # Preview the terminal-safe animated penguin avatar.
 buddy avatar
 
+# Inspect or snapshot Buddy's adaptive Skillastic runtime.
+buddy skillastic status
+buddy skillastic list
+buddy skillastic capture
+
+# Plan offline, apply to OBS, or apply then reflect on the rendered scene.
+buddy obs plan examples/obs-scene.json
+buddy obs apply examples/obs-scene.json
+buddy obs evaluate "Buddy Studio"
+buddy obs compose examples/obs-scene.json
+
 # Check stable releases; repeated checks are cached for six hours.
 buddy update
 buddy update --force
@@ -88,6 +99,38 @@ Useful overrides:
 
 Speech is opt-in. Without `--speak`, Buddy does not start Voxd or play audio.
 The local `context` and `status` commands never contact Groq.
+
+## Skillastic integration
+
+Buddy delegates bounded, read-oriented lifecycle operations to the installed
+Skillastic CLI and emits its JSON unchanged. `status` and `list` inspect the
+adaptive runtime; `capture` records a point-in-time snapshot. Set
+`BUDDY_SKILLASTIC_BIN` to override the executable. Buddy deliberately does not
+expose arbitrary Skillastic migration or mutation arguments through this layer.
+
+The repository includes a versioned `obs-scene-management` skill under
+`.skillastic/`, so its layout contract, safety boundaries, and operating steps
+evolve alongside the application.
+
+## OBS scene management
+
+OBS layouts are declared as normalized rectangles in a JSON scene spec such as
+`examples/obs-scene.json`. `buddy obs plan` is fully offline and deterministic:
+it validates source identity and bounds, maps rectangles into a measured canvas
+safe area, and reports coverage, disallowed overlap, and a layout score.
+
+`apply` connects to OBS WebSocket, measures OBS's actual base canvas, creates or
+reuses the named scene and inputs, sets bounds, ordering, visibility, and locks,
+and activates the scene only when the spec opts in. Configure the connection
+with `BUDDY_OBS_HOST` (default `127.0.0.1`), `BUDDY_OBS_PORT` (default `4455`),
+and `OBS_WEBSOCKET_PASSWORD`.
+
+`evaluate` captures the rendered scene through OBS—not the whole desktop—and
+asks the configured vision model to assess hierarchy, balance, legibility,
+safe-area use, cropping, dead space, and occlusion. `compose` applies and then
+evaluates. The reflective result is advisory JSON: model output is never parsed
+as executable OBS operations, so deterministic scene configuration remains the
+authority.
 
 ## Just-in-time screen vision
 

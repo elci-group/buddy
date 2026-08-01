@@ -1,6 +1,6 @@
 [package]
 name = "buddy"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 description = "A local system-context assistant with Groq intelligence and Voxd speech"
 license = "MIT"
