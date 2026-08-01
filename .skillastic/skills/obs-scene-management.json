@@ -1,0 +1,35 @@
+{
+  "name": "obs-scene-management",
+  "skill_version": "0.1.0",
+  "compatible_apps": [
+    ">=0.1.0, <1.0.0"
+  ],
+  "created": "2026-08-01T13:57:12.894654489Z",
+  "last_verified": "2026-08-01",
+  "confidence": 0.95,
+  "status": "active",
+  "verified_app_version": "0.3.3",
+  "mutation_history": [],
+  "context": {
+    "frameworks": [
+      "tokio"
+    ],
+    "toolchains": [],
+    "directories": [
+      "assets",
+      "examples",
+      "src"
+    ],
+    "dependencies": {
+      "anyhow": "1.0",
+      "obws": "0.15",
+      "reqwest": "0.13",
+      "rusqlite": "0.29",
+      "serde": "1.0",
+      "serde_json": "1.0",
+      "sysinfo": "0.28",
+      "tokio": "1"
+    }
+  },
+  "body_path": "obs-scene-management.md"
+}

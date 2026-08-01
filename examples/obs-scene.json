@@ -1,0 +1,33 @@
+{
+  "scene": "Buddy Studio",
+  "canvas": {
+    "width": 1920,
+    "height": 1080,
+    "safe_margin": 48
+  },
+  "activate": false,
+  "sources": [
+    {
+      "name": "Buddy Camera",
+      "kind": "v4l2_input",
+      "settings": {},
+      "rect": { "x": 0.0, "y": 0.0, "width": 0.68, "height": 1.0 },
+      "fit": "cover",
+      "enabled": true,
+      "locked": true
+    },
+    {
+      "name": "Buddy Notes",
+      "kind": "browser_source",
+      "settings": {
+        "url": "about:blank",
+        "width": 600,
+        "height": 900
+      },
+      "rect": { "x": 0.7, "y": 0.0, "width": 0.3, "height": 1.0 },
+      "fit": "contain",
+      "enabled": true,
+      "locked": true
+    }
+  ]
+}
