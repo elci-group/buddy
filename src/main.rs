@@ -514,14 +514,11 @@ where
                     if refresh || store.file_count()? == 0 {
                         let root = home_dir()?;
                         let (entries, skipped) = store.capture_filesystem(&root)?;
-                            eprintln!("Indexed {entries} filesystem entries (skipped {skipped}).");
+                        eprintln!("Indexed {entries} filesystem entries (skipped {skipped}).");
                     }
                     let screen_capture = screen.then(capture_screen).transpose()?;
-                    let answer = ask_groq(
-                        &question,
-                        &store.context(limit)?,
-                        screen_capture.as_ref(),
-                    )?;
+                    let answer =
+                        ask_groq(&question, &store.context(limit)?, screen_capture.as_ref())?;
                     penguin.finish();
                     println!("{answer}");
                     if speak {
@@ -570,8 +567,7 @@ where
         },
         "help" | "--help" | "-h" if remaining.is_empty() => Ok(CliCommand::Help),
         "version" | "--version" | "-V" if remaining.is_empty() => Ok(CliCommand::Version),
-        "status" | "avatar" | "help" | "version" | "--help" | "--version" | "-h"
-        | "-V" => {
+        "status" | "avatar" | "help" | "version" | "--help" | "--version" | "-h" | "-V" => {
             bail!("{command} does not accept arguments")
         }
         _ => bail!("unknown command '{command}'; run 'buddy help'"),
@@ -783,10 +779,7 @@ fn capture_screen() -> Result<ScreenCapture> {
         ));
     } else {
         candidates.extend([
-            (
-                "grim".to_owned(),
-                vec![path.clone().into_os_string()],
-            ),
+            ("grim".to_owned(), vec![path.clone().into_os_string()]),
             (
                 "gnome-screenshot".to_owned(),
                 vec![OsString::from("-f"), path.clone().into_os_string()],
@@ -862,8 +855,7 @@ impl Drop for TemporaryCapture {
 }
 
 fn encode_base64(input: &[u8]) -> String {
-    const TABLE: &[u8; 64] =
-        b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut output = String::with_capacity(input.len().div_ceil(3) * 4);
     for chunk in input.chunks(3) {
         let first = chunk[0];
@@ -1105,7 +1097,12 @@ fn unix_now_nanos() -> u128 {
 
 fn env_flag(name: &str) -> bool {
     env::var(name)
-        .map(|value| matches!(value.to_ascii_lowercase().as_str(), "1" | "true" | "yes" | "on"))
+        .map(|value| {
+            matches!(
+                value.to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes" | "on"
+            )
+        })
         .unwrap_or(false)
 }
 
