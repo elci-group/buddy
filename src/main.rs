@@ -683,22 +683,7 @@ fn ask_groq(
             "Use only the supplied machine snapshot when making claims about this computer. Say when the snapshot does not contain enough information. Snapshot: {context_json}\nQuestion: {question}"
         )
     };
-    let user_content = match screen {
-        Some(capture) => serde_json::json!([
-            { "type": "text", "text": prompt },
-            {
-                "type": "image_url",
-                "image_url": {
-                    "url": format!(
-                        "data:{};base64,{}",
-                        capture.mime_type,
-                        encode_base64(&capture.bytes)
-                    )
-                }
-            }
-        ]),
-        None => serde_json::Value::String(prompt),
-    };
+    let user_content = build_user_content(prompt, screen);
     let request = ChatRequest {
         model: &model,
         messages: vec![
@@ -744,6 +729,28 @@ fn ask_groq(
         .ok_or_else(|| anyhow!("Groq returned no answer"))
 }
 
+fn build_user_content(
+    prompt: String,
+    screen: Option<&ScreenCapture>,
+) -> serde_json::Value {
+    match screen {
+        Some(capture) => serde_json::json!([
+            { "type": "text", "text": prompt },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": format!(
+                        "data:{};base64,{}",
+                        capture.mime_type,
+                        encode_base64(&capture.bytes)
+                    )
+                }
+            }
+        ]),
+        None => serde_json::Value::String(prompt),
+    }
+}
+
 impl ScreenCapture {
     fn metadata(&self) -> ScreenMetadata<'_> {
         ScreenMetadata {
@@ -758,12 +765,18 @@ impl ScreenCapture {
 
 fn capture_screen() -> Result<ScreenCapture> {
     let max_bytes = env_usize("BUDDY_SCREEN_MAX_BYTES")?.unwrap_or(DEFAULT_SCREEN_MAX_BYTES);
-    let path = env::temp_dir().join(format!(
-        "buddy-screen-{}-{}.png",
+    let directory = env::temp_dir().join(format!(
+        "buddy-screen-{}-{}",
         std::process::id(),
         unix_now_nanos()
     ));
-    let _guard = TemporaryCapture(path.clone());
+    std::fs::create_dir(&directory)
+        .with_context(|| format!("create temporary capture directory {}", directory.display()))?;
+    let path = directory.join("screen.png");
+    let _guard = TemporaryCapture {
+        file: path.clone(),
+        directory,
+    };
     let mut failures = Vec::new();
 
     let mut candidates: Vec<(String, Vec<OsString>)> = Vec::new();
@@ -827,10 +840,13 @@ fn capture_screen() -> Result<ScreenCapture> {
                     captured_at_unix: unix_now(),
                 });
             }
-            Ok(output) => failures.push(format!(
-                "{binary}: {}",
-                truncate_chars(String::from_utf8_lossy(&output.stderr).trim(), 160)
-            )),
+            Ok(output) => {
+                let _ = std::fs::remove_file(&path);
+                failures.push(format!(
+                    "{binary}: {}",
+                    truncate_chars(String::from_utf8_lossy(&output.stderr).trim(), 160)
+                ));
+            }
             Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
             Err(error) => failures.push(format!("{binary}: {error}")),
         }
@@ -846,11 +862,15 @@ fn capture_screen() -> Result<ScreenCapture> {
     )
 }
 
-struct TemporaryCapture(PathBuf);
+struct TemporaryCapture {
+    file: PathBuf,
+    directory: PathBuf,
+}
 
 impl Drop for TemporaryCapture {
     fn drop(&mut self) {
-        let _ = std::fs::remove_file(&self.0);
+        let _ = std::fs::remove_file(&self.file);
+        let _ = std::fs::remove_dir(&self.directory);
     }
 }
 
@@ -1208,6 +1228,25 @@ mod tests {
         assert_eq!(encode_base64(b"fo"), "Zm8=");
         assert_eq!(encode_base64(b"foo"), "Zm9v");
         assert_eq!(encode_base64(b"foobar"), "Zm9vYmFy");
+    }
+
+    #[test]
+    fn vision_content_uses_a_base64_data_url() {
+        let capture = ScreenCapture {
+            bytes: b"png".to_vec(),
+            mime_type: "image/png",
+            capture_tool: "test-capture".to_owned(),
+            captured_at_unix: 123,
+        };
+        let content = build_user_content("what is visible?".to_owned(), Some(&capture));
+        let parts = content.as_array().unwrap();
+        assert_eq!(parts[0]["type"], "text");
+        assert_eq!(parts[0]["text"], "what is visible?");
+        assert_eq!(parts[1]["type"], "image_url");
+        assert_eq!(
+            parts[1]["image_url"]["url"],
+            "data:image/png;base64,cG5n"
+        );
     }
 
     #[test]
