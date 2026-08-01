@@ -1,5 +1,7 @@
 # Buddy
 
+![Buddy's animated penguin avatar](assets/buddy-penguin.gif)
+
 Buddy is a small Rust command-line assistant that indexes local machine context,
 stores it in SQLite, and lets a Groq model answer questions about the snapshot.
 Answers can be spoken through Voxd; Voxd's Mimic integration provides phonetic
@@ -36,12 +38,19 @@ buddy scan ~/projects
 # Ask about the saved snapshot. Processes refresh on every question.
 buddy ask "Which development tools are running?"
 
+# Capture the screen just in time and let a vision model use its current state.
+buddy ask --screen "What error is visible, and what should I try next?"
+
 # Refresh the filesystem snapshot first and speak the response through Voxd.
 buddy ask --refresh --speak "Summarise this machine"
 
 # Inspect exactly what Buddy can send, without making a network request.
 buddy context --limit 100
+buddy context --screen --limit 100
 buddy status
+
+# Preview the terminal-safe animated penguin avatar.
+buddy avatar
 
 # Check stable releases; repeated checks are cached for six hours.
 buddy update
@@ -65,6 +74,10 @@ Useful overrides:
 - `BUDDY_VOXD_PROJECT` — project path used for the stable Voxd voice (default `.`).
 - `BUDDY_TTS_MAX_CHARS` — spoken character cap.
 - `BUDDY_CONTEXT_LIMIT` — filesystem entries included in model context.
+- `BUDDY_VISION_MODEL` — multimodal model used only with `--screen`.
+- `BUDDY_SCREENSHOT_BIN` — custom screenshot executable receiving an output path.
+- `BUDDY_SCREEN_MAX_BYTES` — maximum capture size in bytes (default 10 MiB).
+- `BUDDY_NO_AVATAR` — disable terminal animation (`1`, `true`, `yes`, or `on`).
 - `BUDDY_DB_PATH` — SQLite path; defaults to `$XDG_DATA_HOME/buddy/buddy.db` or
   `~/.local/share/buddy/buddy.db`.
 - `GROQ_API_URL` — Groq-compatible chat completions endpoint.
@@ -75,6 +88,37 @@ Useful overrides:
 
 Speech is opt-in. Without `--speak`, Buddy does not start Voxd or play audio.
 The local `context` and `status` commands never contact Groq.
+
+## Just-in-time screen vision
+
+Screen context is also opt-in. `buddy ask --screen` captures the current full
+screen only for that request, reads it into memory, deletes the temporary image,
+and sends it alongside the bounded machine snapshot to Groq's multimodal chat
+API. Buddy does not cache screen pixels or write them to its database.
+
+`buddy context --screen` performs the same ephemeral capture but prints only
+capture metadata (`capture_tool`, MIME type, byte count, and time), never base64
+pixels. This verifies the capture path without contacting a model or exposing
+the image in terminal output.
+
+The default vision model is `qwen/qwen3.6-27b`. Override it with
+`BUDDY_VISION_MODEL`. Buddy tries `grim`, `gnome-screenshot`, `spectacle`,
+`scrot`, and ImageMagick `import` on Linux, or `screencapture` on macOS. Set
+`BUDDY_SCREENSHOT_BIN` to use a custom executable that accepts the destination
+path as its final argument. Captures are capped at 10 MiB by default; adjust
+`BUDDY_SCREEN_MAX_BYTES` when needed.
+
+Screen images can contain passwords, private messages, or other sensitive data.
+Review the visible desktop before using `--screen`. Buddy labels text visible in
+the image as untrusted content in its model prompt so on-screen instructions do
+not override the user's question.
+
+## Penguin avatar
+
+Buddy animates a compact penguin on interactive terminals while it captures or
+waits for Groq. Redirected output stays clean, `--no-avatar` disables animation
+for one question, and `BUDDY_NO_AVATAR=1` disables it globally. The generated
+mascot artwork and animation live in `assets/`.
 
 ## Stable update detection
 

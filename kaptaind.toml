@@ -51,6 +51,7 @@ include = [
     "LICENSE",
     "buddy.py",
     "requirements.txt",
+    "assets/**",
 ]
 exclude = ["*.log", ".env*", ".kaptaind/**", "target/**"]
 

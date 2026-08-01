@@ -12,7 +12,17 @@ forbid_regex = ["TODO", "FIXME", "unimplemented!"]
 [[file]]
 path = "README.md"
 required = true
-require_regex = ["cargo install", "GROQ_API_KEY", "buddy scan", "buddy ask", "buddy update"]
+require_regex = ["cargo install", "GROQ_API_KEY", "buddy scan", "buddy ask", "buddy update", "buddy ask --screen", "buddy avatar"]
+
+[[file]]
+path = "assets/buddy-penguin.gif"
+required = true
+min_size_bytes = 1000
+
+[[file]]
+path = "assets/buddy-penguin-sprite.png"
+required = true
+min_size_bytes = 1000
 
 [[command]]
 name = "format check"
