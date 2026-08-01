@@ -15,6 +15,9 @@ use std::thread::{self, JoinHandle};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use sysinfo::{PidExt, ProcessExt, System, SystemExt};
 
+mod obs;
+mod skillastic;
+
 const DEFAULT_MODEL: &str = "llama-3.3-70b-versatile";
 const DEFAULT_VISION_MODEL: &str = "qwen/qwen3.6-27b";
 const DEFAULT_API_URL: &str = "https://api.groq.com/openai/v1/chat/completions";
@@ -44,6 +47,8 @@ enum CliCommand {
         screen: bool,
     },
     Avatar,
+    Obs(obs::Action),
+    Skillastic(skillastic::Action),
     Update {
         force: bool,
     },
@@ -467,6 +472,8 @@ where
         CliCommand::Help => print_help(),
         CliCommand::Version => println!("buddy {}", env!("CARGO_PKG_VERSION")),
         CliCommand::Avatar => show_avatar(),
+        CliCommand::Obs(action) => obs::run(action)?,
+        CliCommand::Skillastic(action) => skillastic::run(action)?,
         command => {
             let database_path = database_path()?;
             let mut store = BuddyStore::open(database_path)?;
@@ -526,7 +533,11 @@ where
                         speak_with_voxd(&answer)?;
                     }
                 }
-                CliCommand::Avatar | CliCommand::Help | CliCommand::Version => unreachable!(),
+                CliCommand::Avatar
+                | CliCommand::Obs(_)
+                | CliCommand::Skillastic(_)
+                | CliCommand::Help
+                | CliCommand::Version => unreachable!(),
             }
         }
     }
@@ -560,6 +571,10 @@ where
             Ok(CliCommand::Context { limit, screen })
         }
         "avatar" if remaining.is_empty() => Ok(CliCommand::Avatar),
+        "obs" => Ok(CliCommand::Obs(obs::Action::parse(&remaining)?)),
+        "skillastic" => Ok(CliCommand::Skillastic(skillastic::Action::parse(
+            &remaining,
+        )?)),
         "update" => match remaining.as_slice() {
             [] => Ok(CliCommand::Update { force: false }),
             [flag] if flag == "--force" => Ok(CliCommand::Update { force: true }),
@@ -665,13 +680,11 @@ fn ask_groq(
     context: &MachineContext,
     screen: Option<&ScreenCapture>,
 ) -> Result<String> {
-    let api_key = env::var("GROQ_API_KEY").context("GROQ_API_KEY is not set")?;
     let model = if screen.is_some() {
         env::var("BUDDY_VISION_MODEL").unwrap_or_else(|_| DEFAULT_VISION_MODEL.to_owned())
     } else {
         env::var("GROQ_MODEL").unwrap_or_else(|_| DEFAULT_MODEL.to_owned())
     };
-    let api_url = env::var("GROQ_API_URL").unwrap_or_else(|_| DEFAULT_API_URL.to_owned());
     let context_json = serde_json::to_string(context)?;
     let prompt = if let Some(capture) = screen {
         format!(
@@ -684,8 +697,29 @@ fn ask_groq(
         )
     };
     let user_content = build_user_content(prompt, screen);
+    send_groq(&model, user_content)
+}
+
+pub(crate) fn ask_vision_data_url(prompt: &str, image_data_url: &str) -> Result<String> {
+    if !image_data_url.starts_with("data:image/") {
+        bail!("vision input must be an image data URL");
+    }
+    let model =
+        env::var("BUDDY_VISION_MODEL").unwrap_or_else(|_| DEFAULT_VISION_MODEL.to_owned());
+    send_groq(
+        &model,
+        serde_json::json!([
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": image_data_url}}
+        ]),
+    )
+}
+
+fn send_groq(model: &str, user_content: serde_json::Value) -> Result<String> {
+    let api_key = env::var("GROQ_API_KEY").context("GROQ_API_KEY is not set")?;
+    let api_url = env::var("GROQ_API_URL").unwrap_or_else(|_| DEFAULT_API_URL.to_owned());
     let request = ChatRequest {
-        model: &model,
+        model,
         messages: vec![
             ChatMessage {
                 role: "system",
@@ -1131,6 +1165,11 @@ fn print_help() {
            buddy ask [--refresh] [--screen] [--speak] [--no-avatar] [--limit N] <QUESTION>\n  \
            buddy context [--screen] [--limit N]\n  \
            buddy avatar\n  \
+           buddy skillastic [status|list|capture]\n  \
+           buddy obs plan <SPEC.json>\n  \
+           buddy obs apply <SPEC.json>\n  \
+           buddy obs evaluate <SCENE>\n  \
+           buddy obs compose <SPEC.json>\n  \
            buddy update [--force]\n  \
            buddy status\n\n\
          COMMANDS:\n  \
@@ -1138,6 +1177,8 @@ fn print_help() {
            ask        Ask Groq; --screen adds an ephemeral just-in-time screen image\n  \
            context    Print bounded JSON; --screen adds capture metadata, never pixels\n  \
            avatar     Preview Buddy's animated penguin terminal avatar\n  \
+           skillastic Inspect and capture Buddy's adaptive Skillastic state\n  \
+           obs        Plan, apply, and visually evaluate OBS scene layouts\n  \
            update     Check stable GitHub releases (cached for six hours)\n  \
            status     Show database and backend status\n\n\
          ENVIRONMENT:\n  \
@@ -1147,6 +1188,10 @@ fn print_help() {
            BUDDY_SCREENSHOT_BIN  Screenshot tool receiving an output path\n  \
            BUDDY_SCREEN_MAX_BYTES Maximum capture size (10485760)\n  \
            BUDDY_NO_AVATAR       Disable terminal animation (1/true/yes/on)\n  \
+           BUDDY_SKILLASTIC_BIN  Skillastic executable override (skillastic)\n  \
+           BUDDY_OBS_HOST        OBS WebSocket host (127.0.0.1)\n  \
+           BUDDY_OBS_PORT        OBS WebSocket port (4455)\n  \
+           OBS_WEBSOCKET_PASSWORD OBS WebSocket password\n  \
            BUDDY_DB_PATH         SQLite database override\n  \
            BUDDY_CONTEXT_LIMIT   Maximum filesystem entries sent (2000)\n  \
            BUDDY_VOXD_BIN        Voxd executable override (voxd-cli)\n  \
