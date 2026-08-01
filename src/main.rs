@@ -466,6 +466,7 @@ where
     match parse_args(arguments)? {
         CliCommand::Help => print_help(),
         CliCommand::Version => println!("buddy {}", env!("CARGO_PKG_VERSION")),
+        CliCommand::Avatar => show_avatar(),
         command => {
             let database_path = database_path()?;
             let mut store = BuddyStore::open(database_path)?;
@@ -525,8 +526,7 @@ where
                         speak_with_voxd(&answer)?;
                     }
                 }
-                CliCommand::Avatar => show_avatar(),
-                CliCommand::Help | CliCommand::Version => unreachable!(),
+                CliCommand::Avatar | CliCommand::Help | CliCommand::Version => unreachable!(),
             }
         }
     }
@@ -729,10 +729,7 @@ fn ask_groq(
         .ok_or_else(|| anyhow!("Groq returned no answer"))
 }
 
-fn build_user_content(
-    prompt: String,
-    screen: Option<&ScreenCapture>,
-) -> serde_json::Value {
+fn build_user_content(prompt: String, screen: Option<&ScreenCapture>) -> serde_json::Value {
     match screen {
         Some(capture) => serde_json::json!([
             { "type": "text", "text": prompt },
@@ -1243,10 +1240,7 @@ mod tests {
         assert_eq!(parts[0]["type"], "text");
         assert_eq!(parts[0]["text"], "what is visible?");
         assert_eq!(parts[1]["type"], "image_url");
-        assert_eq!(
-            parts[1]["image_url"]["url"],
-            "data:image/png;base64,cG5n"
-        );
+        assert_eq!(parts[1]["image_url"]["url"], "data:image/png;base64,cG5n");
     }
 
     #[test]
