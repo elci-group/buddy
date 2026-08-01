@@ -173,7 +173,10 @@ pub fn run(action: Action) -> Result<()> {
     match action {
         Action::Plan { spec } => {
             let spec = load_spec(&spec)?;
-            println!("{}", serde_json::to_string_pretty(&plan(&spec, spec.canvas)?)?);
+            println!(
+                "{}",
+                serde_json::to_string_pretty(&plan(&spec, spec.canvas)?)?
+            );
             Ok(())
         }
         online => {
@@ -345,7 +348,10 @@ async fn apply(client: &Client, spec: &SceneSpec) -> Result<(ApplyReport, Layout
     };
     let plan = plan(spec, canvas)?;
     let scenes = client.scenes().list().await.context("list OBS scenes")?;
-    let created_scene = !scenes.scenes.iter().any(|scene| scene.id.name == spec.scene);
+    let created_scene = !scenes
+        .scenes
+        .iter()
+        .any(|scene| scene.id.name == spec.scene);
     if created_scene {
         client
             .scenes()
@@ -354,9 +360,15 @@ async fn apply(client: &Client, spec: &SceneSpec) -> Result<(ApplyReport, Layout
             .with_context(|| format!("create OBS scene '{}'", spec.scene))?;
     }
 
-    let existing_inputs = client.inputs().list(None).await.context("list OBS inputs")?;
+    let existing_inputs = client
+        .inputs()
+        .list(None)
+        .await
+        .context("list OBS inputs")?;
     for (index, (source, measured)) in spec.sources.iter().zip(&plan.sources).enumerate() {
-        let existing = existing_inputs.iter().find(|input| input.id.name == source.name);
+        let existing = existing_inputs
+            .iter()
+            .find(|input| input.id.name == source.name);
         if let Some(input) = existing {
             if input.unversioned_kind != source.kind && input.kind != source.kind {
                 bail!(
@@ -382,7 +394,8 @@ async fn apply(client: &Client, spec: &SceneSpec) -> Result<(ApplyReport, Layout
             .list(SceneId::Name(&spec.scene))
             .await
             .with_context(|| format!("list items in OBS scene '{}'", spec.scene))?;
-        let item_id = if let Some(item) = items.iter().find(|item| item.source_name == source.name) {
+        let item_id = if let Some(item) = items.iter().find(|item| item.source_name == source.name)
+        {
             item.id
         } else if existing.is_some() {
             client

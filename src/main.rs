@@ -704,8 +704,7 @@ pub(crate) fn ask_vision_data_url(prompt: &str, image_data_url: &str) -> Result<
     if !image_data_url.starts_with("data:image/") {
         bail!("vision input must be an image data URL");
     }
-    let model =
-        env::var("BUDDY_VISION_MODEL").unwrap_or_else(|_| DEFAULT_VISION_MODEL.to_owned());
+    let model = env::var("BUDDY_VISION_MODEL").unwrap_or_else(|_| DEFAULT_VISION_MODEL.to_owned());
     send_groq(
         &model,
         serde_json::json!([
