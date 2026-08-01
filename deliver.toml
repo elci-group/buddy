@@ -14,16 +14,6 @@ path = "README.md"
 required = true
 require_regex = ["cargo install", "GROQ_API_KEY", "buddy scan", "buddy ask", "buddy update", "buddy ask --screen", "buddy avatar"]
 
-[[file]]
-path = "assets/buddy-penguin.gif"
-required = true
-min_size_bytes = 1000
-
-[[file]]
-path = "assets/buddy-penguin-sprite.png"
-required = true
-min_size_bytes = 1000
-
 [[command]]
 name = "format check"
 cmd = ["cargo", "fmt", "--check"]
@@ -35,6 +25,20 @@ name = "clippy"
 cmd = ["cargo", "clippy", "--all-targets", "--", "-D", "warnings"]
 expect_exit = 0
 timeout_secs = 300
+
+[[command]]
+name = "penguin sprite"
+cmd = ["identify", "assets/buddy-penguin-sprite.png"]
+expect_exit = 0
+timeout_secs = 30
+stdout_contains = ["PNG 2149x732"]
+
+[[command]]
+name = "four-frame penguin animation"
+cmd = ["identify", "assets/buddy-penguin.gif"]
+expect_exit = 0
+timeout_secs = 30
+stdout_contains = ["buddy-penguin.gif[3]"]
 
 [[command]]
 name = "tests"
